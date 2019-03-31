@@ -6,7 +6,7 @@ This is a plug-in that can convert regular perspective footage (from e.g. a came
 
 ## Installing
 
-Check the [releases page](https://github.com/Gorialis/jishaku/releases) and place the .aex file into the `Plug-ins` folder of your install, e.g. at `C:\Program Files\Adobe\Adobe After Effects CC 2018\Support Files\Plug-ins\`.
+Check the [releases page](https://github.com/Gorialis/aftereffects_inverse_equirectangular/releases) and place the .aex file into the `Plug-ins` folder of your install, e.g. at `C:\Program Files\Adobe\Adobe After Effects CC 2018\Support Files\Plug-ins\`.
 
 The effect is called "Inverse Equirectangular" and will appear in the "Devon's Plug-ins" subcategory.
 
