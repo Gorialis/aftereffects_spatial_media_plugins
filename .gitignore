@@ -1,3 +1,14 @@
+# Visual Studio & Code
+.code/
+.vs/
+.vscode/
+
+# Build artifacts
+Win/x64/
+Win/enc_temp_folder/
+Win/*.aps
+Win/*.rc
+
 # Prerequisites
 *.d
 
