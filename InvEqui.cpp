@@ -99,7 +99,6 @@ static PF_Err SubSample_Pixel8(void *refcon, A_long x, A_long y, PF_Pixel8 *inP,
 	float pitchDeg = (static_cast<float>(y) * 180.0f / static_cast<float>(rArgs->in_data->height)) - 90.0f;
 
 	PF_EffectWorld sample = rArgs->scanLayer->u.ld;
-	PF_ParamDefUnion aa = rArgs->scanLayer->u;
 
 	float yaw = static_cast<float>(FIX_2_FLOAT(rArgs->params[INVEQUI_YAW]->u.ad.value));
 	float pitch = static_cast<float>(FIX_2_FLOAT(rArgs->params[INVEQUI_PITCH]->u.ad.value));
