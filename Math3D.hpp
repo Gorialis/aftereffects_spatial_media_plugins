@@ -87,4 +87,22 @@ namespace Math3D {
 		return Vector3D<T>(x / w, y / w, z / w);
 	}
 
+	template <typename T = float>
+	T sinc(T x) {
+		if (x == static_cast<T>(0))
+			return static_cast<T>(1);
+
+		T xi = radians(x * static_cast<T>(180));
+
+		return sin(xi) / xi;
+	}
+
+	template <typename T = float>
+	T lanczos(T x, T a = static_cast<T>(3)) {
+		if (-a <= x || x < a)
+			return sinc(x) * sinc(x / a);
+
+		return 0;
+	}
+
 }

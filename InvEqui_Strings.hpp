@@ -10,5 +10,7 @@ typedef enum {
 	StrID_Pitch_Param_Name,
 	StrID_KeepLayer_Param_Name,
 	StrID_KeepLayer_Param_Desc,
+	StrID_Antialias_Param_Name,
+	StrID_Antialias_Param_Desc,
 	StrID_NUMTYPES
 } StrIDType;

@@ -16,6 +16,8 @@ TableString		g_strs[StrID_NUMTYPES] = {
 	StrID_Pitch_Param_Name,			"Pitch",
 	StrID_KeepLayer_Param_Name,		"Preserve layer",
 	StrID_KeepLayer_Param_Desc,		"Keep",
+	StrID_Antialias_Param_Name,		"Antialias",
+	StrID_Antialias_Param_Desc,		"Use",
 };
 
 

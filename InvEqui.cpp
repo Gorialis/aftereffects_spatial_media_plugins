@@ -76,6 +76,16 @@ static PF_Err ParamsSetup (PF_InData *in_data, PF_OutData *out_data, PF_ParamDef
 		KEEPLAYER_PARAM_ID
 	);
 
+	AEFX_CLR_STRUCT(def);
+
+	PF_ADD_CHECKBOX(
+		STR(StrID_Antialias_Param_Name),
+		STR(StrID_Antialias_Param_Desc),
+		TRUE,
+		0,
+		ANTIALIAS_PARAM_ID
+	);
+
 	out_data->num_params = INVEQUI_NUM_PARAMS;
 
 	return PF_Err_NONE;
@@ -87,8 +97,62 @@ struct RenderArgs {
 	PF_ParamDef *scanLayer;
 };
 
-inline PF_Pixel *sampleIntegral8(PF_EffectWorld &def, int x, int y) {
+inline PF_Pixel8 *sampleIntegral8(PF_EffectWorld &def, int x, int y) {
 	return (PF_Pixel8*)((char*)def.data + (y * def.rowbytes) + (x * sizeof(PF_Pixel8)));
+}
+
+inline PF_Pixel8 boundedIntegral(PF_EffectWorld &def, int x, int y) {
+	if (x < 0 || y < 0)
+		return {0, 0, 0, 0};
+	if (x > def.width || y > def.height)
+		return {0, 0, 0, 0};
+
+	PF_Pixel8 *ptr = sampleIntegral8(def, x, y);
+	if (ptr == nullptr)
+		return {0, 0, 0, 0};
+
+	return *ptr;
+}
+
+inline PF_Pixel8 lanczosSample(PF_EffectWorld &def, float x, float y) {
+	int xi = static_cast<int>(x);
+	int yi = static_cast<int>(y);
+	float xo = x - static_cast<float>(xi);
+	float yo = y - static_cast<float>(yi);
+
+	float lx, ly;
+	float a, r, g, b;
+	float y_a, y_r, y_g, y_b;
+
+	a = r = g = b = 0.0f;
+
+	for (int iy = -3; iy <= 3; iy++) {
+		y_a = y_r = y_g = y_b = 0.0f;
+
+		for (int ix = -3; ix <= 3; ix++) {
+			lx = Math3D::lanczos(xo - ix);
+			PF_Pixel px = boundedIntegral(def, xi + ix, yi + iy);
+
+			y_a += lx * px.alpha;
+			y_r += lx * px.red;
+			y_g += lx * px.green;
+			y_b += lx * px.blue;
+		}
+
+		ly = Math3D::lanczos(yo - iy);
+
+		a += ly * y_a;
+		r += ly * y_r;
+		g += ly * y_g;
+		b += ly * y_b;
+	}
+
+	return {
+		static_cast<A_u_char>(fmaxf(fminf(255.0f, a), 0.0f)),
+		static_cast<A_u_char>(fmaxf(fminf(255.0f, r), 0.0f)),
+		static_cast<A_u_char>(fmaxf(fminf(255.0f, g), 0.0f)),
+		static_cast<A_u_char>(fmaxf(fminf(255.0f, b), 0.0f))
+	};
 }
 
 static PF_Err SubSample_Pixel8(void *refcon, A_long x, A_long y, PF_Pixel8 *inP, PF_Pixel8 *outP) {
@@ -107,70 +171,57 @@ static PF_Err SubSample_Pixel8(void *refcon, A_long x, A_long y, PF_Pixel8 *inP,
 	fov = fminf(fmaxf(fov, 0.1f), 179.9f);
 
 	bool keepLayer = static_cast<bool>(rArgs->params[INVEQUI_KEEPLAYER]->u.bd.value);
+	bool antialias = static_cast<bool>(rArgs->params[INVEQUI_ANTIALIAS]->u.bd.value);
 
-	Math3D::Vector3D<float> model =
+	Math3D::Vector3D<> model =
 		Math3D::rotate(
 			Math3D::rotate(
-				Math3D::Vector3D<float>(0.0f, 0.0f, -1.0f),
+				Math3D::Vector3D<>(0.0f, 0.0f, -1.0f),
 				Math3D::radians(pitchDeg),
-				Math3D::Vector3D<float>(1.0f, 0.0f, 0.0f)
+				Math3D::Vector3D<>(1.0f, 0.0f, 0.0f)
 			),
 			Math3D::radians(yawDeg),
-			Math3D::Vector3D<float>(0.0f, 1.0f, 0.0f)
+			Math3D::Vector3D<>(0.0f, 1.0f, 0.0f)
 		);
 
-	Math3D::Vector3D<float> view =
+	Math3D::Vector3D<> view =
 		Math3D::rotate(
 			Math3D::rotate(
 				model,
 				Math3D::radians(-yaw),
-				Math3D::Vector3D<float>(0.0f, 1.0f, 0.0f)
+				Math3D::Vector3D<>(0.0f, 1.0f, 0.0f)
 			),
 			Math3D::radians(-pitch),
-			Math3D::Vector3D<float>(1.0f, 0.0f, 0.0f)
+			Math3D::Vector3D<>(1.0f, 0.0f, 0.0f)
 		);
 
-	Math3D::Vector3D<float> screen =
+	Math3D::Vector3D<> screen =
 		Math3D::perspective(
 			view,
 			Math3D::radians(fov),
 			static_cast<float>(sample.width) / static_cast<float>(sample.height)
 		);
 
-	if (screen.z < -1.0f || screen.z > 1.0f || screen.x < -1.0f || screen.x > 1.0f || screen.y < -1.0f || screen.y > 1.0f) {
-		if (keepLayer) {
-			outP->red = inP->red;
-			outP->green = inP->green;
-			outP->blue = inP->blue;
-			outP->alpha = inP->alpha;
+	float width = static_cast<float>(sample.width);
+	float height = static_cast<float>(sample.height);
+
+	float samplePosX = (screen.x + 1.0f) * 0.5f * width;
+	float samplePosY = (1.0f - ((screen.y + 1.0f) * 0.5f)) * height;
+
+	if (screen.z < -1.0f || screen.z > 1.0f || samplePosX < -2.0f || samplePosY < -2.0f || samplePosX + 1.0f > width || samplePosY + 1.0f > height) {
+		if (keepLayer)
+			*outP = *inP;
+		else
+			*outP = { 0, 0, 0, 0 };
+	} else {
+		if (antialias) {
+			*outP = lanczosSample(sample, samplePosX, samplePosY);
 		}
 		else {
-			outP->red = 0;
-			outP->green = 0;
-			outP->blue = 0;
-			outP->alpha = 0;
-		}
-	}
-	else {
-		float samplePosX = (screen.x + 1.0f) * 0.5f * static_cast<float>(sample.width);
-		float samplePosY = (1.0f - ((screen.y + 1.0f) * 0.5f)) * static_cast<float>(sample.height);
+			int sX = static_cast<int>(samplePosX);
+			int sY = static_cast<int>(samplePosY);
 
-		int sX = static_cast<int>(samplePosX);
-		int sY = static_cast<int>(samplePosY);
-
-		PF_Pixel* sampleP = sampleIntegral8(sample, sX, sY);
-
-		if (sampleP != nullptr) {
-			outP->red = sampleP->red;
-			outP->green = sampleP->green;
-			outP->blue = sampleP->blue;
-			outP->alpha = sampleP->alpha;
-		}
-		else {
-			outP->red = 255;
-			outP->green = 255;
-			outP->blue = 0;
-			outP->alpha = 255;
+			*outP = boundedIntegral(sample, sX, sY);
 		}
 	}
 
@@ -178,8 +229,9 @@ static PF_Err SubSample_Pixel8(void *refcon, A_long x, A_long y, PF_Pixel8 *inP,
 }
 
 static PF_Err Render (PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *params[], PF_LayerDef *output) {
-	PF_Err				err		= PF_Err_NONE;
-	AEGP_SuiteHandler	suites(in_data->pica_basicP);
+	PF_Err	err  = PF_Err_NONE,
+			err2 = PF_Err_NONE;
+	AEGP_SuiteHandler suites(in_data->pica_basicP);
 
 	PF_ParamDef scanLayer;
 
@@ -189,7 +241,7 @@ static PF_Err Render (PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *par
 		&scanLayer
 	};
 
-	A_long progress_baseL = 0, progress_finalL = 1;
+	A_long progress_baseL = 0, progress_finalL = 3;
 
 	ERR(PF_CHECKOUT_PARAM(
 		in_data,
@@ -199,6 +251,8 @@ static PF_Err Render (PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *par
 		in_data->time_scale,
 		&scanLayer
 	));
+
+	progress_baseL++;
 
 	ERR(suites.Iterate8Suite1()->iterate(
 		in_data,
@@ -210,6 +264,10 @@ static PF_Err Render (PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *par
 		SubSample_Pixel8,
 		output
 	));
+
+	progress_baseL++;
+
+	ERR2(PF_CHECKIN_PARAM(in_data, &scanLayer));
 
 	progress_baseL++;
 
