@@ -2,6 +2,7 @@
 #include "Math3D.hpp"
 #include "InvEqui.hpp"
 
+
 static PF_Err About (PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *params[], PF_LayerDef *output) {
 	AEGP_SuiteHandler suites(in_data->pica_basicP);
 
@@ -95,6 +96,7 @@ struct RenderArgs {
 	PF_InData *in_data;
 	PF_ParamDef **params;
 	PF_ParamDef *scanLayer;
+	Math3D::TransformRenderer<float> renderer;
 };
 
 inline PF_Pixel8 *sampleIntegral8(PF_EffectWorld &def, int x, int y) {
@@ -155,75 +157,67 @@ inline PF_Pixel8 lanczosSample(PF_EffectWorld &def, float x, float y) {
 	};
 }
 
+constexpr uint8_t PRECISION_BITS = 7;
+
+#define divshift(a)\
+    ((((a) >> 8) + a) >> 8)
+
+static PF_Pixel CompositePixel(PF_Pixel fg, PF_Pixel bg) {
+	if (fg.alpha == 0)
+		return bg;
+	if (fg.alpha == 255)
+		return fg;
+
+	uint32_t tmpr, tmpg, tmpb;
+	uint32_t blend = bg.alpha * (255 - fg.alpha);
+	uint32_t oa = fg.alpha * 255 + blend;
+
+	uint32_t coef1 = fg.alpha * 255 * 255 * (1 << PRECISION_BITS) / oa;
+	uint32_t coef2 = 255 * (1 << PRECISION_BITS) - coef1;
+
+	tmpr = fg.red * coef1 + bg.red * coef2;
+	tmpg = fg.green * coef1 + bg.green * coef2;
+	tmpb = fg.blue * coef1 + bg.blue * coef2;
+
+	return {
+		static_cast<A_u_char>(divshift(oa + 0x80)),
+		static_cast<A_u_char>(divshift(tmpr + (0x80 << PRECISION_BITS)) >> PRECISION_BITS),
+		static_cast<A_u_char>(divshift(tmpg + (0x80 << PRECISION_BITS)) >> PRECISION_BITS),
+		static_cast<A_u_char>(divshift(tmpb + (0x80 << PRECISION_BITS)) >> PRECISION_BITS)
+	};
+}
+
 static PF_Err SubSample_Pixel8(void *refcon, A_long x, A_long y, PF_Pixel8 *inP, PF_Pixel8 *outP) {
 	PF_Err err = PF_Err_NONE;
 	RenderArgs* rArgs = reinterpret_cast<RenderArgs*>(refcon);
 
-	float yawDeg = (static_cast<float>(x) * 360.0f / static_cast<float>(rArgs->in_data->width)) - 180.0f;
-	float pitchDeg = (static_cast<float>(y) * 180.0f / static_cast<float>(rArgs->in_data->height)) - 90.0f;
-
 	PF_EffectWorld sample = rArgs->scanLayer->u.ld;
 
-	float yaw = static_cast<float>(FIX_2_FLOAT(rArgs->params[INVEQUI_YAW]->u.ad.value));
-	float pitch = static_cast<float>(FIX_2_FLOAT(rArgs->params[INVEQUI_PITCH]->u.ad.value));
-
-	float fov = static_cast<float>(FIX_2_FLOAT(rArgs->params[INVEQUI_FOV]->u.ad.value));
-	fov = fminf(fmaxf(fov, 0.1f), 179.9f);
-
-	bool keepLayer = static_cast<bool>(rArgs->params[INVEQUI_KEEPLAYER]->u.bd.value);
 	bool antialias = static_cast<bool>(rArgs->params[INVEQUI_ANTIALIAS]->u.bd.value);
+	bool preserve = static_cast<bool>(rArgs->params[INVEQUI_KEEPLAYER]->u.bd.value);
 
-	Math3D::Vector3D<> model =
-		Math3D::rotate(
-			Math3D::rotate(
-				Math3D::Vector3D<>(0.0f, 0.0f, -1.0f),
-				Math3D::radians(pitchDeg),
-				Math3D::Vector3D<>(1.0f, 0.0f, 0.0f)
-			),
-			Math3D::radians(yawDeg),
-			Math3D::Vector3D<>(0.0f, 1.0f, 0.0f)
-		);
+	glm::vec3 screen = rArgs->renderer.Render(x, y);
 
-	Math3D::Vector3D<> view =
-		Math3D::rotate(
-			Math3D::rotate(
-				model,
-				Math3D::radians(-yaw),
-				Math3D::Vector3D<>(0.0f, 1.0f, 0.0f)
-			),
-			Math3D::radians(-pitch),
-			Math3D::Vector3D<>(1.0f, 0.0f, 0.0f)
-		);
+	PF_Pixel out;
 
-	Math3D::Vector3D<> screen =
-		Math3D::perspective(
-			view,
-			Math3D::radians(fov),
-			static_cast<float>(sample.width) / static_cast<float>(sample.height)
-		);
-
-	float width = static_cast<float>(sample.width);
-	float height = static_cast<float>(sample.height);
-
-	float samplePosX = (screen.x + 1.0f) * 0.5f * width;
-	float samplePosY = (1.0f - ((screen.y + 1.0f) * 0.5f)) * height;
-
-	if (screen.z < -1.0f || screen.z > 1.0f || samplePosX < -2.0f || samplePosY < -2.0f || samplePosX + 1.0f > width || samplePosY + 1.0f > height) {
-		if (keepLayer)
-			*outP = *inP;
-		else
-			*outP = { 0, 0, 0, 0 };
+	if (!rArgs->renderer.inBounds(screen)) {
+		out = { 0, 0, 0, 0 };
 	} else {
 		if (antialias) {
-			*outP = lanczosSample(sample, samplePosX, samplePosY);
+			out = lanczosSample(sample, screen.x, screen.y);
 		}
 		else {
-			int sX = static_cast<int>(samplePosX);
-			int sY = static_cast<int>(samplePosY);
+			int sX = static_cast<int>(screen.x);
+			int sY = static_cast<int>(screen.y);
 
-			*outP = boundedIntegral(sample, sX, sY);
+			out = boundedIntegral(sample, sX, sY);
 		}
 	}
+
+	if (preserve)
+		out = CompositePixel(out, *inP);
+
+	*outP = out;
 
 	return err;
 }
@@ -235,13 +229,7 @@ static PF_Err Render (PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *par
 
 	PF_ParamDef scanLayer;
 
-	RenderArgs rArgs = {
-		in_data,
-		params,
-		&scanLayer
-	};
-
-	A_long progress_baseL = 0, progress_finalL = 3;
+	A_long progress_baseL = 0, progress_finalL = 4;
 
 	ERR(PF_CHECKOUT_PARAM(
 		in_data,
@@ -254,11 +242,34 @@ static PF_Err Render (PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *par
 
 	progress_baseL++;
 
+	RenderArgs rArgs = {
+		in_data,
+		params,
+		&scanLayer,
+		Math3D::TransformRenderer<float>(
+			glm::vec2(
+				static_cast<float>(scanLayer.u.ld.width),
+				static_cast<float>(scanLayer.u.ld.height)
+			),
+			glm::vec2(
+				static_cast<float>(in_data->width),
+				static_cast<float>(in_data->height)
+			),
+			glm::radians(static_cast<float>(FIX_2_FLOAT(params[INVEQUI_FOV]->u.ad.value))),
+			glm::radians(static_cast<float>(FIX_2_FLOAT(params[INVEQUI_PITCH]->u.ad.value))),
+			glm::radians(static_cast<float>(FIX_2_FLOAT(params[INVEQUI_YAW]->u.ad.value)))
+		)
+	};
+
+	progress_baseL++;
+
+	PF_LayerDef* drawLayer = &params[INVEQUI_INPUT]->u.ld;
+
 	ERR(suites.Iterate8Suite1()->iterate(
 		in_data,
 		progress_baseL,
 		progress_finalL,
-		&params[INVEQUI_INPUT]->u.ld,
+		drawLayer,
 		NULL,
 		reinterpret_cast<void*>(&rArgs),
 		SubSample_Pixel8,
