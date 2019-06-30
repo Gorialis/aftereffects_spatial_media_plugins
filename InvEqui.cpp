@@ -242,6 +242,11 @@ static PF_Err Render (PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *par
 
 	progress_baseL++;
 
+	if (scanLayer.u.ld.width == 0 || scanLayer.u.ld.height == 0) {
+		progress_baseL += 3;
+		return err;
+	}
+
 	RenderArgs rArgs = {
 		in_data,
 		params,
