@@ -106,7 +106,7 @@ inline PF_Pixel8 *sampleIntegral8(PF_EffectWorld &def, int x, int y) {
 inline PF_Pixel8 boundedIntegral(PF_EffectWorld &def, int x, int y) {
 	if (x < 0 || y < 0)
 		return {0, 0, 0, 0};
-	if (x > def.width || y > def.height)
+	if (x >= def.width || y >= def.height)
 		return {0, 0, 0, 0};
 
 	PF_Pixel8 *ptr = sampleIntegral8(def, x, y);
