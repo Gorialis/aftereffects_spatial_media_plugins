@@ -68,11 +68,18 @@ namespace Math3D {
 				T p_c = glm::cos(pitch);
 				T p_s = glm::sin(pitch);
 
-				glm::vec4 homogenous = transform * glm::vec4(
+				glm::vec4 vector(
 					-y_s * p_c,
 					p_s,
 					-y_c * p_c,
 					static_cast<T>(1)
+				);
+
+				glm::vec4 homogenous(
+					transform[0].x * vector.x + transform[1].x * vector.y + transform[2].x * vector.z + transform[3].x * vector.w,
+					transform[0].y * vector.x + transform[1].y * vector.y + transform[2].y * vector.z + transform[3].y * vector.w,
+					transform[0].z * vector.x + transform[1].z * vector.y + transform[2].z * vector.z + transform[3].z * vector.w,
+					transform[0].w * vector.x + transform[1].w * vector.y + transform[2].w * vector.z + transform[3].w * vector.w
 				);
 
 				return homogenous / homogenous.w;

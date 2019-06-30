@@ -126,13 +126,18 @@ inline PF_Pixel8 lanczosSample(PF_EffectWorld &def, float x, float y) {
 	float a, r, g, b;
 	float y_a, y_r, y_g, y_b;
 
+	float x_coeffs[7];
+	for (int ix_pre = -3; ix_pre <= 3; ix_pre++) {
+		x_coeffs[ix_pre + 3] = Math3D::lanczos(xo - ix_pre);
+	}
+
 	a = r = g = b = 0.0f;
 
 	for (int iy = -3; iy <= 3; iy++) {
 		y_a = y_r = y_g = y_b = 0.0f;
 
 		for (int ix = -3; ix <= 3; ix++) {
-			lx = Math3D::lanczos(xo - ix);
+			lx = x_coeffs[ix + 3];
 			PF_Pixel px = boundedIntegral(def, xi + ix, yi + iy);
 
 			y_a += lx * px.alpha;
