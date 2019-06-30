@@ -16,7 +16,7 @@ namespace Math3D {
 
 		T xi = glm::radians(x * static_cast<T>(180));
 
-		return sin(xi) / xi;
+		return glm::sin(xi) / xi;
 	}
 
 	template <typename T = float>
