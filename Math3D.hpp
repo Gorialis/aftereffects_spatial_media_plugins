@@ -60,32 +60,32 @@ namespace Math3D {
 			}
 
 			glm::vec3 Render(int32_t x, int32_t y) {
-				float yawDeg = (static_cast<float>(x) * 360.0f / output.x) - 180.0f;
-				float pitchDeg = (static_cast<float>(y) * 180.0f / output.y) - 90.0f;
+				T yaw = glm::radians((static_cast<T>(x) * 360.0f / output.x) - 180.0f);
+				T pitch = glm::radians((static_cast<T>(y) * 180.0f / output.y) - 90.0f);
 
-				glm::mat4 model = glm::rotate(
-					glm::rotate(
-						glm::mat4(static_cast<T>(1)),
-						glm::radians(yawDeg),
-						glm::vec3(static_cast<T>(0), static_cast<T>(1), static_cast<T>(0))
-					),
-					glm::radians(pitchDeg),
-					glm::vec3(static_cast<T>(1), static_cast<T>(0), static_cast<T>(0))
+				T y_c = glm::cos(yaw);
+				T y_s = glm::sin(yaw);
+				T p_c = glm::cos(pitch);
+				T p_s = glm::sin(pitch);
+
+				glm::vec4 homogenous = transform * glm::vec4(
+					-y_s * p_c,
+					p_s,
+					-y_c * p_c,
+					static_cast<T>(1)
 				);
 
-				glm::vec4 homogenous = transform * model * glm::vec4(static_cast<T>(0), static_cast<T>(0), static_cast<T>(-1), static_cast<T>(1));
-
-				return glm::vec3(homogenous / homogenous.w);
+				return homogenous / homogenous.w;
 			}
 
 			bool inBounds(glm::vec3 r) {
-				return !(
-					r.z < static_cast<T>(-1) ||
-					r.z > static_cast<T>(1) ||
-					r.x < static_cast<T>(-1) ||
-					r.x > input.x + static_cast<T>(1) ||
-					r.y < static_cast<T>(-1) ||
-					r.y > input.y + static_cast<T>(1)
+				return (
+					r.z >= static_cast<T>(-1) &&
+					r.z <= static_cast<T>(1) &&
+					r.x >= static_cast<T>(-1) &&
+					r.x <= input.x + static_cast<T>(1) &&
+					r.y >= static_cast<T>(-1) &&
+					r.y <= input.y + static_cast<T>(1)
 				);
 			}
 
