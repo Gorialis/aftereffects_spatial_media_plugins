@@ -257,8 +257,8 @@ static PF_Err Render (PF_InData *in_data, PF_OutData *out_data, PF_ParamDef *par
 				static_cast<float>(scanLayer.u.ld.height)
 			),
 			glm::vec2(
-				static_cast<float>(in_data->width),
-				static_cast<float>(in_data->height)
+				static_cast<float>(output->width),
+				static_cast<float>(output->height)
 			),
 			glm::radians(static_cast<float>(FIX_2_FLOAT(params[INVEQUI_FOV]->u.ad.value))),
 			glm::radians(static_cast<float>(FIX_2_FLOAT(params[INVEQUI_PITCH]->u.ad.value))),
