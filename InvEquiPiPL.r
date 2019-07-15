@@ -5,6 +5,8 @@
 	#include <AE_General.r>
 #endif
 
+#include "Meta.hpp"
+
 resource 'PiPL' (16000) {
 	{	/* array properties: 12 elements */
 		/* [1] */
@@ -13,11 +15,11 @@ resource 'PiPL' (16000) {
 		},
 		/* [2] */
 		Name {
-			"Inverse Equirectangular"
+			AE_INVEQUI_PLUGIN_NAME
 		},
 		/* [3] */
 		Category {
-			"Devon's Plug-ins"
+			AE_INVEQUI_PLUGIN_CATEGORY
 		},
 #ifdef AE_OS_WIN
 	#ifdef AE_PROC_INTELx64
@@ -40,13 +42,7 @@ resource 'PiPL' (16000) {
 		},
 		/* [8] */
 		AE_Effect_Version {
-			589825
-			/*
-				MAJOR * 524288 +
-				MINOR * 32768 +
-				BUG * 2048 +
-				BUILD
-			*/
+			AE_INVEQUI_PLUGIN_VERSION
 		},
 		/* [9] */
 		AE_Effect_Info_Flags {
@@ -62,7 +58,7 @@ resource 'PiPL' (16000) {
 		},
 		/* [11] */
 		AE_Effect_Match_Name {
-			"GORIALIS InvEquirectangular"
+			AE_INVEQUI_PLUGIN_IDENTIFIER
 		},
 		/* [12] */
 		AE_Reserved_Info {

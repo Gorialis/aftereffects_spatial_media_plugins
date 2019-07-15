@@ -1,0 +1,13 @@
+#pragma once
+
+#define	MAJOR_VERSION	1
+#define	MINOR_VERSION	3
+#define	BUG_VERSION		0
+#define	STAGE_VERSION	0  // PF_Stage_DEVELOP
+#define	BUILD_VERSION	1
+
+
+#define AE_INVEQUI_PLUGIN_NAME         "Inverse Equirectangular"
+#define AE_INVEQUI_PLUGIN_CATEGORY     "Devon's Plug-ins"
+#define AE_INVEQUI_PLUGIN_IDENTIFIER   "GORIALIS InvEquirectangular"
+#define AE_INVEQUI_PLUGIN_VERSION      MAJOR_VERSION * 524288 + MINOR_VERSION * 32768 + BUG_VERSION * 2048 + BUILD_VERSION
