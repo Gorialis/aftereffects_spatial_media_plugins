@@ -36,6 +36,8 @@ build_script:
   - "cmake --build . --target ALL_BUILD --config Release -- /nologo"
   - "cd .."
 
+  - "cd .."
+
   - ps: 'Compress-Archive -Path "C:/projects/aftereffects-spatial-media-plugins/build/Win32/Release/*.aex" -DestinationPath "SpatialMedia_AE_${env:APPVEYOR_REPO_TAG_NAME}_Win32.zip"'
   - ps: 'Compress-Archive -Path "C:/projects/aftereffects-spatial-media-plugins/build/Win64/Release/*.aex" -DestinationPath "SpatialMedia_AE_${env:APPVEYOR_REPO_TAG_NAME}_Win64.zip"'
 
