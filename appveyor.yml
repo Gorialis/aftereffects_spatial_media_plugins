@@ -26,14 +26,14 @@ build_script:
   - "cd Win32"
   - "mkdir out"
   - 'cmake ../.. -G "Visual Studio 15 2017" -A Win32 -DAFTEREFFECTS_SDK:PATH="C:/projects/aftereffects-spatial-media-plugins/.appveyor/SDK/Adobe After Effects CC 15.0 Win SDK" -DOUTPUT_LOCALLY:BOOL="1" -DCMAKE_INSTALL_PREFIX:PATH="C:/projects/aftereffects-spatial-media-plugins/build/Win32/out"'
-  - "cmake --build . --target INSTALL --config Release -- /nologo"
+  - "cmake --build . --target ALL_BUILD --config Release -- /nologo"
   - "cd ../.."
 
   - "mkdir Win64"
   - "cd Win64"
   - "mkdir out"
   - 'cmake ../.. -G "Visual Studio 15 2017 Win64" -A x64 -DAFTEREFFECTS_SDK:PATH="C:/projects/aftereffects-spatial-media-plugins/.appveyor/SDK/Adobe After Effects CC 15.0 Win SDK" -DOUTPUT_LOCALLY:BOOL="1" -DCMAKE_INSTALL_PREFIX:PATH="C:/projects/aftereffects-spatial-media-plugins/build/Win64/out"'
-  - "cmake --build . --target INSTALL --config Release -- /nologo"
+  - "cmake --build . --target ALL_BUILD --config Release -- /nologo"
   - "cd ../.."
 
   - ps: 'Compress-Archive -Path "C:/projects/aftereffects-spatial-media-plugins/build/Win32/out/*" -DestinationPath "SpatialMedia_AE_${env:APPVEYOR_REPO_TAG_NAME}_Win32.zip"'
