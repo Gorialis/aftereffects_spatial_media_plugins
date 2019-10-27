@@ -15,6 +15,7 @@ install:
   - ps: iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
   - ps: appveyor-tools\secure-file -decrypt SDK.zip.enc -secret ${env:SDK_SECRET} -salt ${env:SDK_SALT}
   - ps: "Expand-Archive -Path 'SDK.zip' -DestinationPath 'SDK'"
+  - ps: "Get-ChildItem 'SDK/Adobe After Effects CC 15.0 Win SDK'"
   - "cd .."
 
 build_script:
