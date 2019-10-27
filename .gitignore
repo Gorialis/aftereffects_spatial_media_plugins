@@ -1,43 +1,10 @@
-# Visual Studio & Code
-.code/
-.vs/
+
 .vscode/
+.appveyor/appveyor-tools/
+.appveyor/SDK.zip
+.appveyor/SDK/
 
-# Build artifacts
-Win/x64/
-Win/enc_temp_folder/
-Win/*.aps
-Win/*.rc
-
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
+build/
+PiPL.rc
+PiPl.rr
+PiPl.rrc

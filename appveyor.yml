@@ -1,0 +1,41 @@
+build: off
+
+image: Visual Studio 2017
+
+environment:
+  matrix:
+    - ARCH: amd64
+  SDK_SECRET:
+    secure: pLYjAMRKJUZyQ8vzyopHfcjUG6SG5tggIe1lEJxq/pI8+NRrGSUSf958dVYwQrK4q5cSamjw0VjBkasEverHRlwwrC16n46HCNCqWKBRjxRcLT4ebpRlFRKKMItHkY7g2652WDU38/LnLNpLzkzs8/Dt8bI6Xqm3bphRMQK+JpLnuyOyQO8DSg3SFYQluSLL
+  SDK_SALT:
+    secure: neFQdZAmkAZdK8TPjN/bc+qKcZauqZC9pRTIVYnSwYSueGg/SB5IDIQ4KMSVySXzL6gkHCMF2qnlNPfSzeaadw==
+
+install:
+  - "cd .appveyor"
+  - ps: iex ((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/appveyor/secure-file/master/install.ps1'))
+  - ps: appveyor-tools\secure-file -decrypt SDK.zip.enc -secret ${env:SDK_SECRET} -salt ${env:SDK_SALT}
+  - ps: "Expand-Archive -Path 'SDK.zip' -DestinationPath 'SDK'"
+  - "cd .."
+
+build_script:
+  - "mkdir build"
+  - "cd build"
+
+  - "mkdir Win32"
+  - "mkdir out"
+  - 'cmake ../.. -G "Visual Studio 15 2017" -A Win32 -DAFTEREFFECTS_SDK:PATH="C:/projects/aftereffects_spatial_media_plugins/.appveyor/SDK/Adobe After Effects CC 15.0 Win SDK" -DOUTPUT_LOCALLY:BOOL="1" -DCMAKE_INSTALL_PREFIX:PATH="C:/projects/aftereffects_spatial_media_plugins/build/Win32/out"'
+  - "cmake --build . --target INSTALL --config Release -- /nologo"
+  - "cd .."
+
+  - "mkdir Win64"
+  - "mkdir out"
+  - 'cmake ../.. -G "Visual Studio 15 2017 Win64" -A x64 -DAFTEREFFECTS_SDK:PATH="C:/projects/aftereffects_spatial_media_plugins/.appveyor/SDK/Adobe After Effects CC 15.0 Win SDK" -DOUTPUT_LOCALLY:BOOL="1" -DCMAKE_INSTALL_PREFIX:PATH="C:/projects/aftereffects_spatial_media_plugins/build/Win64/out"'
+  - "cmake --build . --target INSTALL --config Release -- /nologo"
+  - "cd .."
+
+  - ps: 'Compress-Archive -Path "C:/projects/aftereffects_spatial_media_plugins/build/Win32/out/*" -DestinationPath "SpatialMedia_AE_${env:APPVEYOR_REPO_TAG_NAME}_Win32.zip"'
+  - ps: 'Compress-Archive -Path "C:/projects/aftereffects_spatial_media_plugins/build/Win64/out/*" -DestinationPath "SpatialMedia_AE_${env:APPVEYOR_REPO_TAG_NAME}_Win64.zip"'
+
+artifacts:
+  - path: SpatialMedia_AE_*_Win32.zip
+  - path: SpatialMedia_AE_*_Win64.zip
