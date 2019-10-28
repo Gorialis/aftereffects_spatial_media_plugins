@@ -65,23 +65,23 @@ glm::vec3 get_globevec_from_equirectangular(glm::ivec2 position, glm::ivec2 size
 }
 
 glm::vec3 transform_globevec_inside_out(glm::vec3 vec, float pitch, float yaw, float roll) {
-    float s_p = -sinf(pitch);
+    float s_p = sinf(pitch);
     float c_p = cosf(pitch);
 
-    float s_y = -sinf(yaw);
+    float s_y = sinf(yaw);
     float c_y = cosf(yaw);
 
-    float s_r = -sinf(roll);
+    float s_r = sinf(roll);
     float c_r = cosf(roll);
 
-    float m00 = c_r * c_y - s_p * s_r * s_y;
-    float m01 = c_y * s_r + c_r * s_p * s_y;
-    float m02 = -c_p * s_y;
-    float m10 = -c_p * s_r;
+    float m00 = c_r * c_y + s_p * s_r * s_y;
+    float m01 = -c_y * s_r + c_r * s_p * s_y;
+    float m02 = c_p * s_y;
+    float m10 = c_p * s_r;
     float m11 = c_p * c_r;
-    float m12 = s_p;
-    float m20 = c_y * s_p * s_r + c_r * s_y;
-    float m21 = -c_r * c_y * s_p + s_r * s_y;
+    float m12 = -s_p;
+    float m20 = c_y * s_p * s_r - c_r * s_y;
+    float m21 = c_r * c_y * s_p + s_r * s_y;
     float m22 = c_p * c_y;
 
     return {
@@ -92,23 +92,23 @@ glm::vec3 transform_globevec_inside_out(glm::vec3 vec, float pitch, float yaw, f
 }
 
 glm::vec3 transform_globevec_outside_in(glm::vec3 vec, float pitch, float yaw, float roll) {
-    float s_p = -sinf(pitch);
+    float s_p = sinf(pitch);
     float c_p = cosf(pitch);
 
-    float s_y = -sinf(yaw);
+    float s_y = sinf(yaw);
     float c_y = cosf(yaw);
 
-    float s_r = -sinf(roll);
+    float s_r = sinf(roll);
     float c_r = cosf(roll);
 
-    float m00 = c_r * c_y - s_p * s_r * s_y;
-    float m01 = -c_p * s_r;
-    float m02 = c_y * s_p * s_r + c_r * s_y;
-    float m10 = c_y * s_r + c_r * s_p * s_y;
+    float m00 = c_r * c_y + s_p * s_r * s_y;
+    float m01 = c_p * s_r;
+    float m02 = c_y * s_p * s_r - c_r * s_y;
+    float m10 = -c_y * s_r + c_r * s_p * s_y;
     float m11 = c_p * c_r;
-    float m12 = -c_r * c_y * s_p + s_r * s_y;
-    float m20 = -c_p * s_y;
-    float m21 = s_p;
+    float m12 = c_r * c_y * s_p + s_r * s_y;
+    float m20 = c_p * s_y;
+    float m21 = -s_p;
     float m22 = c_p * c_y;
 
     return {
