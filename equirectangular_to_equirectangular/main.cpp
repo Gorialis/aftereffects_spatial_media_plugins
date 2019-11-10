@@ -18,6 +18,7 @@ EffectPlugin::EffectPlugin() : name(PLUGIN_NAME), uuid(PLUGIN_UUID), parameters(
 struct RenderArgs {
     EffectPlugin* plugin;
     PF_LayerDef* output;
+    float matrix[9];
 };
 
 static PF_Err wipe(void* refptr, A_long x, A_long y, PF_Pixel8* in_pixel, PF_Pixel8* out_pixel) {
@@ -26,12 +27,7 @@ static PF_Err wipe(void* refptr, A_long x, A_long y, PF_Pixel8* in_pixel, PF_Pix
     PF_EffectWorld sampler = args->plugin->parameters.self()->u.ld;
 
     glm::vec3 globevec = get_globevec_from_equirectangular({x, y}, {args->output->width, args->output->height});
-    globevec = transform_globevec_inside_out(
-        globevec,
-        glm::radians(static_cast<float>(FIX_2_FLOAT(args->plugin->parameters[1]->u.ad.value))),
-        glm::radians(static_cast<float>(FIX_2_FLOAT(args->plugin->parameters[static_cast<size_t>(0)]->u.ad.value))),
-        glm::radians(static_cast<float>(FIX_2_FLOAT(args->plugin->parameters[2]->u.ad.value)))
-    );
+    globevec = matrix_transform(globevec, args->matrix);
     glm::vec2 sample_loc = get_equirectangular_from_globevec(
         globevec,
         {sampler.width, sampler.height}
@@ -49,7 +45,14 @@ PF_Err EffectPlugin::render(PF_InData* in_data, PF_OutData* out_data, PF_LayerDe
 
     AEGP_SuiteHandler suites(in_data->pica_basicP);
 
-    RenderArgs args = {this, output};
+    RenderArgs args = {this, output, {1, 0, 0, 0, 1, 0, 0, 0, 1}};
+
+    transform_globevec_inside_out(
+        glm::radians(static_cast<float>(FIX_2_FLOAT(parameters[1]->u.ad.value))),
+        glm::radians(static_cast<float>(FIX_2_FLOAT(parameters[static_cast<size_t>(0)]->u.ad.value))),
+        glm::radians(static_cast<float>(FIX_2_FLOAT(parameters[2]->u.ad.value))),
+        args.matrix
+    );
 
     ERR(
         suites.Iterate8Suite1()->iterate(

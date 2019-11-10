@@ -64,7 +64,7 @@ glm::vec3 get_globevec_from_equirectangular(glm::ivec2 position, glm::ivec2 size
     );
 }
 
-glm::vec3 transform_globevec_inside_out(glm::vec3 vec, float pitch, float yaw, float roll) {
+void transform_globevec_inside_out(float pitch, float yaw, float roll, float* target) {
     float s_p = sinf(pitch);
     float c_p = cosf(pitch);
 
@@ -74,24 +74,18 @@ glm::vec3 transform_globevec_inside_out(glm::vec3 vec, float pitch, float yaw, f
     float s_r = sinf(roll);
     float c_r = cosf(roll);
 
-    float m00 = c_r * c_y + s_p * s_r * s_y;
-    float m01 = -c_y * s_r + c_r * s_p * s_y;
-    float m02 = c_p * s_y;
-    float m10 = c_p * s_r;
-    float m11 = c_p * c_r;
-    float m12 = -s_p;
-    float m20 = c_y * s_p * s_r - c_r * s_y;
-    float m21 = c_r * c_y * s_p + s_r * s_y;
-    float m22 = c_p * c_y;
-
-    return {
-        m00 * vec.x + m01 * vec.y + m02 * vec.z,
-        m10 * vec.x + m11 * vec.y + m12 * vec.z,
-        m20 * vec.x + m21 * vec.y + m22 * vec.z
-    };
+    target[0] = c_r * c_y + s_p * s_r * s_y;
+    target[1] = -c_y * s_r + c_r * s_p * s_y;
+    target[2] = c_p * s_y;
+    target[3] = c_p * s_r;
+    target[4] = c_p * c_r;
+    target[5] = -s_p;
+    target[6] = c_y * s_p * s_r - c_r * s_y;
+    target[7] = c_r * c_y * s_p + s_r * s_y;
+    target[8] = c_p * c_y;
 }
 
-glm::vec3 transform_globevec_outside_in(glm::vec3 vec, float pitch, float yaw, float roll) {
+void transform_globevec_outside_in(float pitch, float yaw, float roll, float* target) {
     float s_p = sinf(pitch);
     float c_p = cosf(pitch);
 
@@ -101,20 +95,22 @@ glm::vec3 transform_globevec_outside_in(glm::vec3 vec, float pitch, float yaw, f
     float s_r = sinf(roll);
     float c_r = cosf(roll);
 
-    float m00 = c_r * c_y + s_p * s_r * s_y;
-    float m01 = c_p * s_r;
-    float m02 = c_y * s_p * s_r - c_r * s_y;
-    float m10 = -c_y * s_r + c_r * s_p * s_y;
-    float m11 = c_p * c_r;
-    float m12 = c_r * c_y * s_p + s_r * s_y;
-    float m20 = c_p * s_y;
-    float m21 = -s_p;
-    float m22 = c_p * c_y;
+    target[0] = c_r * c_y + s_p * s_r * s_y;
+    target[1] = c_p * s_r;
+    target[2] = c_y * s_p * s_r - c_r * s_y;
+    target[3] = -c_y * s_r + c_r * s_p * s_y;
+    target[4] = c_p * c_r;
+    target[5] = c_r * c_y * s_p + s_r * s_y;
+    target[6] = c_p * s_y;
+    target[7] = -s_p;
+    target[8] = c_p * c_y;
+}
 
+inline glm::vec3 matrix_transform(glm::vec3 vec, float* matrix) {
     return {
-        m00 * vec.x + m01 * vec.y + m02 * vec.z,
-        m10 * vec.x + m11 * vec.y + m12 * vec.z,
-        m20 * vec.x + m21 * vec.y + m22 * vec.z
+        matrix[0] * vec.x + matrix[1] * vec.y + matrix[2] * vec.z,
+        matrix[3] * vec.x + matrix[4] * vec.y + matrix[5] * vec.z,
+        matrix[6] * vec.x + matrix[7] * vec.y + matrix[8] * vec.z
     };
 }
 

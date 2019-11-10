@@ -23,6 +23,7 @@ struct RenderArgs {
     EffectPlugin* plugin;
     ParameterCheckout* layer;
     PF_LayerDef* output;
+    float matrix[9];
 };
 
 static PF_Err wipe(void* refptr, A_long x, A_long y, PF_Pixel8* in_pixel, PF_Pixel8* out_pixel) {
@@ -32,12 +33,7 @@ static PF_Err wipe(void* refptr, A_long x, A_long y, PF_Pixel8* in_pixel, PF_Pix
     A_long direction = args->plugin->parameters[static_cast<size_t>(0)]->u.pd.value;
 
     glm::vec3 globevec = get_globevec_from_equirectangular({x, y}, {args->output->width, args->output->height});
-    globevec = transform_globevec_outside_in(
-        globevec,
-        glm::radians(static_cast<float>(FIX_2_FLOAT(args->plugin->parameters[4]->u.ad.value))),
-        glm::radians(static_cast<float>(FIX_2_FLOAT(args->plugin->parameters[3]->u.ad.value))),
-        glm::radians(static_cast<float>(FIX_2_FLOAT(args->plugin->parameters[5]->u.ad.value)))
-    );
+    globevec = matrix_transform(globevec, args->matrix);
     glm::vec2 sample_loc = get_perspective_from_globevec(
         globevec,
         {sampler.width, sampler.height},
@@ -62,7 +58,14 @@ PF_Err EffectPlugin::render(PF_InData* in_data, PF_OutData* out_data, PF_LayerDe
     AEGP_SuiteHandler suites(in_data->pica_basicP);
     ParameterCheckout sourceLayer(in_data, 3);
 
-    RenderArgs args = {this, &sourceLayer, output};
+    RenderArgs args = {this, &sourceLayer, output, {1, 0, 0, 0, 1, 0, 0, 0, 1}};
+
+    transform_globevec_outside_in(
+        glm::radians(static_cast<float>(FIX_2_FLOAT(parameters[4]->u.ad.value))),
+        glm::radians(static_cast<float>(FIX_2_FLOAT(parameters[3]->u.ad.value))),
+        glm::radians(static_cast<float>(FIX_2_FLOAT(parameters[5]->u.ad.value))),
+        args.matrix
+    );
 
     ERR(
         suites.Iterate8Suite1()->iterate(
