@@ -5,6 +5,7 @@
 .appveyor/SDK/
 
 build/
+dist/
 PiPL.rc
 PiPl.rr
 PiPl.rrc
