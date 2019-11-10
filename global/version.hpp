@@ -6,7 +6,7 @@
 
 #define MAJOR_VERSION        2
 #define MINOR_VERSION        0
-#define BUG_VERSION          0
+#define BUG_VERSION          1
 #define STAGE_VERSION        0  // PF_Stage_DEVELOP
 #define BUILD_VERSION        1
 
